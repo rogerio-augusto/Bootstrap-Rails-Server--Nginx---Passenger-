@@ -20,7 +20,7 @@ sudo aptitude install vim git-core bison openssl wget curl \
 											libffi-dev libyaml-dev \
 											autoconf libc6-dev \
 											zlib1g zlib1g-dev libssl-dev \
-											libreadline6-dev \
+											libreadline6-dev libsasl2-dev\
 											apt-show-versions irb	libmemcached-dev
 echo "==> done..."
 
