@@ -1,5 +1,8 @@
-# 1 - basics: run direct on the machine
-# sudo aptitude update && sudo aptitude upgrade && sudo aptitude install ssh build-essential
+# make sure to have this minimum requisites on the machine
+# sudo aptitude install ssh build-essential
+
+# 1 - package updates
+sudo aptitude update && sudo aptitude upgrade
 
 # 2 - ruby enterprise
 echo "Instalando Ruby Enterprise Edition..."
@@ -31,7 +34,7 @@ echo "==> done..."
 echo -e "\n=> Installing libs needed for sqlite and mysql..."
 sudo aptitude -y install libsqlite3-0 sqlite3 libsqlite3-dev \
  												 libmysqlclient16-dev libmysqlclient16 \
-												 mysql-client mysql-common
+												 libmysql-ruby mysql-client mysql-common
 echo "==> done..."
 
 echo -e "\n=> Installing cache and search tools..."
@@ -44,24 +47,35 @@ echo -e "\n=> Pacotes essenciais instalados"
 echo -e "\n=> Atualizando rubygems e instalando gems essenciais..."
 sudo gem update --system
 sudo gem install bundler
-sudo gem update passenger && sudo gem cleanup
+sudo gem update && sudo gem cleanup
 
-# 5 - self-signed certificate
-echo -e "\n=> Gerando self-signed certificate..."
-openssl genrsa -des3 -out server.key 1024 && openssl req -new -key server.key -out server.csr && openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt && sudo cp server.crt /etc/ssl/certs && sudo cp server.key /etc/ssl/private
-echo "Certificado concluído"
-
-# 6 - deploy user
+# 5 - deploy user
 echo -e "\n=> Criando usuário deploy, informe a nova senha:"
 sudo groupadd deploy && sudo useradd -g deploy -s/bin/bash -d/home/deploy -m deploy && sudo usermod -a -G sudo,www-data deploy && sudo passwd deploy
 echo "==> done..."
 
+# 6 - self-signed certificate
+echo -e "\n=> Generating self-signed certificate..."
+sudo openssl genrsa -des3 -out server.key 1024 && openssl req -new -key server.key -out server.csr && openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt && sudo cp server.crt /etc/ssl/certs && sudo cp server.key /etc/ssl/private
+sudo cp /etc/ssl/private/server.key /etc/ssl/private/server.key.orig && sudo openssl rsa -in /etc/ssl/private/server.key.orig -out /etc/ssl/private/server.key
+sudo chmod 400 /etc/ssl/private/server.key
+echo "==> done..."
+
 # 7 - nginx conf
 echo -e "\n=> Iniciando a instalação do Nginx via passenger..."
+echo -e "\n=> Utilize a opção modo avançado para adicionar o módulo ssl e informe o caminho /home/seuusuario/nginx-0.8.54"
+echo -e "\n=> Pressione enter para continuar..."
+read key
+wget http://nginx.org/download/nginx-0.8.54.tar.gz && tar -vzxf nginx-0.8.54.tar.gz
 sudo passenger-install-nginx-module
 echo -e "\n=> Instalação do Nginx via passenger concluída, configurando e inicializando nginx..."
 sudo cp nginx/init.d.nginx /etc/init.d/nginx && sudo chmod +x /etc/init.d/nginx 
 sudo /usr/sbin/update-rc.d -f nginx defaults
 sudo cp nginx/conf/nginx.passenger-3.0.2.conf /opt/nginx/conf/nginx.conf
 sudo mkdir /opt/nginx/conf/sites && sudo chown -R deploy:www-data /opt/nginx && sudo service nginx start
-echo -e "\n=> Nginx e passenger configurados, processo de bootstrap concluído"
+echo "==> done..."
+
+# 8 - capistrano
+echo -e "\n=> Configurando permissões para o capistrano:"
+sudo mkdir -p /var/www/apps && sudo chown -R deploy:www-data /var/www
+echo "==> done..."
